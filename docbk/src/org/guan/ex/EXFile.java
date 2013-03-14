@@ -1,6 +1,6 @@
 package org.guan.ex;
 
-public class Main {
+public class EXFile {
 
 	/**
 	 * @param args
