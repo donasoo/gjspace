@@ -4,6 +4,7 @@ import java.io.*;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -40,7 +41,7 @@ public class EXFile {
         File file = new File(".\\files\\M304.txt");
         BufferedReader reader = null;
         try {
-        	pkg= OPCPackage.open(template);
+        	
             System.out.println("以行为单位读取文件内容，一次读一整行：");
             reader = new BufferedReader(new FileReader(file));
             String tempString = null;
@@ -60,14 +61,11 @@ public class EXFile {
             
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InvalidFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
+        } finally {
             if (reader != null) {
                 try {
                     reader.close();
-                    pkg.close();
+                    
                 } catch (IOException e1) {
                 }
             }
@@ -78,7 +76,7 @@ public class EXFile {
 	private void process(String tempString) {
 		// TODO Auto-generated method stub
 		data=tempString.split(",");
-		fileName=data[0]+" "+data[1];
+		fileName=(data[0]+" "+data[1]).trim();
 		unitName=new StringBuffer(fixname+data[1]);
 		System.out.println(unitName.toString());
 		excel();
@@ -88,6 +86,7 @@ public class EXFile {
 	
 	private void excel(){
 		try {
+			pkg= OPCPackage.open(template, PackageAccess.READ_WRITE);
 			wb = new XSSFWorkbook(pkg);
 			ds=wb.getSheetAt(0); 
 			
@@ -95,15 +94,53 @@ public class EXFile {
 			row=ds.getRow(3);
 			cell=row.getCell(0);
 			cell.setCellValue(unitName.toString().trim());
+			double productd=0.0;
+			double productl=0;
+			double price=0.0;
+			long value=0;
+			
+			for(int i=0; i<237; i++){
+				row=ds.getRow(i+7);
+				
+				price=Double.parseDouble(data[i*3+3]);
+				value=Long.parseLong(data[i*3+4]);
+				if(data[i*3+2].contains(".")){
+					productd=Double.parseDouble(data[i*3+2]);
+					if(productd > 0.01){
+						row.getCell(3).setCellValue(productd);
+					}
+					
+				}else{
+					productl=Long.parseLong(data[i*3+2]);
+					if(productl != 0){
+						row.getCell(3).setCellValue(productl);
+					}
+				}
+				if(price > 0.01){
+					row.getCell(4).setCellValue(price);
+				}
+				if(value != 0){
+					row.getCell(5).setCellValue(value);
+				}
+			}
 			
 			
 			//保存文档
 			fos=new FileOutputStream(".\\files\\"+fileName+".xlsx");
+			
 			wb.write(fos);
+			//pkg.save(fos);
+			pkg.revert();
+			//pkg.close();
 		
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (InvalidFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally{
+			
 		}
 	    
 	}
