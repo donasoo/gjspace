@@ -18,6 +18,8 @@ public class TJacob {
 
 	}
 	
+	
+	//ÖÐ¹úµÄ def
 	private static void saveas(int flag){
 		ComThread.InitSTA();
 
