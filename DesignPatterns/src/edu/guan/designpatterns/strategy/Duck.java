@@ -2,8 +2,12 @@ package edu.guan.designpatterns.strategy;
 
 public abstract class Duck {
 
-	protected FlyBehavior flyBehavior;
-	protected QuackBehavior quackBehavior;
+	FlyBehavior flyBehavior;
+	QuackBehavior quackBehavior;
+	
+	public Duck(){
+		display();
+	}
 	
 	public abstract void display();
 	
