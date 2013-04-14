@@ -15,7 +15,7 @@ public class Read {
 
         try {
             System.out.println("以字节为单位读取文件内容，一次读一个字节：");
-            // 一次读一个字节
+            // 一次读一个字节  
             in = new FileInputStream(file);
             int tempbyte;
             int i=0;

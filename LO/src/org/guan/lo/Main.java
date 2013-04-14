@@ -90,7 +90,7 @@ public class Main  {
         // the a running office (office will be started if necessary)
         //***************************************************************************
         XComponentContext xContext = null;
-
+        
         // get the remote office component context
         try {
             xContext = com.sun.star.comp.helper.Bootstrap.bootstrap();

@@ -12,7 +12,7 @@ public class MainTwo {
         System.out.println(table);
 		String name="E:\\work\\Sarp 2012 ny\\"+table+".Dny";
 		Read.readManyBytes(name, 1000);
-		
+		   
 		Read.readByByte(name);
 
 	}
