@@ -22,7 +22,7 @@ public class Read {
             while ((tempbyte = in.read()) != -1) {
                 System.out.println(i+": "+tempbyte +"  HEX: "+Integer.toHexString(tempbyte));
                 i++;
-                if( i>1000) break; 
+                if( i>20000) break; 
             }
             in.close();
         } catch (IOException e) {
@@ -45,14 +45,16 @@ public class Read {
             byteread = in.read(tempbytes);
             ByteBuffer bb=ByteBuffer.wrap(tempbytes);
             bb.order(ByteOrder.LITTLE_ENDIAN);
+            byte[] bs=new byte[30];
+            bb.position(75);
+            bb.get(bs);
+            //System.out.println("第04位short"+bb.getShort(4));
+            //System.out.println("75char:"+new String(bs));
+           // System.out.println("test:"+bb.get(0));
+           // System.out.println("第67位int："+bb.getInt(71));
             
-            System.out.println(bb.getShort(0));
-            System.out.println(bb.getChar(40));
-            System.out.println(bb.get(17));
-            //System.out.println(bb.getInt(407));
-            
-            for(int i=0; i<5; i++){
-            	System.out.println("data : "+i+": "+bb.getDouble(i*8+65));
+            for(int i=0; i<6; i++){
+            	System.out.println("data "+i+": "+bb.getInt(i*4+103));
             }
             
         } catch (Exception e1) {
@@ -67,12 +69,5 @@ public class Read {
         }
 	}
 	
-	private static void showAvailableBytes(InputStream in) {
-        try {
-            System.out.println("当前字节输入流中的字节数为:" + in.available());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 }
