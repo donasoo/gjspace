@@ -1,6 +1,7 @@
 package org.guan.ex;
 
 import java.io.*;
+import java.util.ArrayList;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -15,7 +16,8 @@ public class EXFile {
 	private final String fixname="综合机关名称：";
 	private StringBuffer unitName;
 	private String fileName="000";
-	private final File template=new File(".\\files\\Template M304.xlsx");
+	private File template;
+	private File datafile;
 	private FileOutputStream fos;
 	private String[] data;
 	
@@ -25,38 +27,49 @@ public class EXFile {
 	private XSSFRow row;
 	private XSSFCell	cell;
 	
+	private int colnum=3;
+	private int rownum=231;
+	private String firstcell="D9";
+	private int firstrow;
+	private int firstcol;
+	private String tablename="M304";
+	private boolean pdf=true;
+	
+	private ArrayList<String> namelist;
+	private EXPdf expdf;
+	
 	public EXFile(){
 		init();
 		readData();
-		//readData();
+		
 	}
 	
 	private void init(){
 		data=new String[750];
 		unitName=new StringBuffer();
+		namelist=new ArrayList<String>();
+		expdf=new EXPdf();
 		
+		firstcol=firstcell.charAt(0)-'A';
+		firstrow=firstcell.charAt(1)-'1';
+		System.out.println(firstcol+"  "+firstrow);
 	}
 	
 	private void readData() {
-        File file = new File(".\\files\\M304.txt");
+		template=new File(".\\files\\Template "+tablename+".xlsx");
+        datafile = new File(".\\files\\"+tablename+".txt");
         BufferedReader reader = null;
         try {
         	
-            System.out.println("以行为单位读取文件内容，一次读一整行：");
-            reader = new BufferedReader(new FileReader(file));
+            reader = new BufferedReader(new FileReader(datafile));
             String tempString = null;
-            int line = 1;
             
-            // 一次读入一行，直到读入null为文件结束
-            //while ((tempString = reader.readLine()) != null) {
-                // 显示行号
-            tempString = reader.readLine();
-                process(tempString);
-                tempString = reader.readLine();
-                process(tempString);
-                line++;
-           // }
-            
+            while ((tempString = reader.readLine()).length()>10) {
+            	process(tempString);
+            }
+            if(pdf){
+            	expdf.create(namelist, tablename);
+            }
             reader.close();
             
         } catch (IOException e) {
@@ -77,9 +90,14 @@ public class EXFile {
 		// TODO Auto-generated method stub
 		data=tempString.split(",");
 		fileName=(data[0]+" "+data[1]).trim();
+		
 		unitName=new StringBuffer(fixname+data[1]);
+		
 		System.out.println(unitName.toString());
-		excel();
+		if(data[0].substring(6, 8).endsWith("00")){
+			excel();
+		}
+		
 	}
 
 
@@ -93,45 +111,43 @@ public class EXFile {
 			//填写综合机关名称
 			row=ds.getRow(3);
 			cell=row.getCell(0);
+			if(cell == null){
+				cell=row.createCell(0);
+			}
 			cell.setCellValue(unitName.toString().trim());
-			double productd=0.0;
-			double productl=0;
-			double price=0.0;
-			long value=0;
+			double realvalue=0.0;
+			long intvalue=0;
 			
-			for(int i=0; i<237; i++){
-				row=ds.getRow(i+7);
+			for(int i=0; i<rownum; i++){
+				row=ds.getRow(i+firstrow);
 				
-				price=Double.parseDouble(data[i*3+3]);
-				value=Long.parseLong(data[i*3+4]);
-				if(data[i*3+2].contains(".")){
-					productd=Double.parseDouble(data[i*3+2]);
-					if(productd > 0.01){
-						row.getCell(3).setCellValue(productd);
+				for(int j=0; j<colnum; j++){
+					if(data[2+i*colnum+j].contains(".")){
+						realvalue=Double.parseDouble(data[2+i*colnum+j]);
+						if(realvalue > 0.01){
+							row.getCell(j+firstcol).setCellValue(realvalue);
+						}
+						
+					}else{
+						intvalue=Long.parseLong(data[2+i*colnum+j]);
+						if(intvalue != 0){
+							row.getCell(j+firstcol).setCellValue(intvalue);
+						}
 					}
-					
-				}else{
-					productl=Long.parseLong(data[i*3+2]);
-					if(productl != 0){
-						row.getCell(3).setCellValue(productl);
-					}
 				}
-				if(price > 0.01){
-					row.getCell(4).setCellValue(price);
-				}
-				if(value != 0){
-					row.getCell(5).setCellValue(value);
-				}
+				
 			}
 			
 			
 			//保存文档
-			fos=new FileOutputStream(".\\files\\"+fileName+".xlsx");
+			fos=new FileOutputStream(".\\tempfiles"+"\\"+fileName+".xlsx");
 			
 			wb.write(fos);
-			//pkg.save(fos);
 			pkg.revert();
-			//pkg.close();
+			
+			namelist.add("E:\\GitJ\\docbk\\tempfiles\\"+fileName+".xlsx");
+			
+			
 		
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
