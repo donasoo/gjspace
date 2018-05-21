@@ -9,7 +9,13 @@ public class Main {
 		// TODO Auto-generated method stub
 
 		System.out.println("start");
-		EXFile ef=new EXFile();
+		//EXFile ef=new EXFile();
+
+		PrintPdf pp=new PrintPdf();
+		MergePdf mp=new MergePdf();
+		pp.addObserver(mp);
+		//pp.dealDirAll("files", "xx001");
+		pp.PrintPdfs("out", 9);
 		System.out.println("end");
 	}
 	

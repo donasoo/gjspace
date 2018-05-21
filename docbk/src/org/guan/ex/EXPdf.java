@@ -1,13 +1,17 @@
 package org.guan.ex;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.pdfbox.exceptions.COSVisitorException;
-import org.apache.pdfbox.util.PDFMergerUtility;
+import java.util.zip.*;
+
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.ComThread;
@@ -16,8 +20,14 @@ import com.jacob.com.Variant;
 
 public class EXPdf {
 	private static final int flag = 57;
+	
+	private String destinationDir;
 
 	public PDFMergerUtility ut;
+	
+	public EXPdf(){
+		ut = new PDFMergerUtility();
+	}
 
 	public void saveaspdf(String fullname) {
 		ComThread.InitSTA();
@@ -49,17 +59,17 @@ public class EXPdf {
 	}
 
 	public void merge(String mergename) {
-		ut.setDestinationFileName("E:\\GitJ\\docbk\\files\\" + mergename
+		ut.setDestinationFileName(destinationDir + mergename
 				+ ".pdf");
+		System.out.println("merge-out : " +mergename);
 		try {
-			ut.mergeDocuments();
-		} catch (COSVisitorException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
+			ut.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
+		}
+		catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		ut = new PDFMergerUtility();
 	}
 
 	public void create(ArrayList<String> namelist, String tablename) {
@@ -72,10 +82,72 @@ public class EXPdf {
 			fullname = itr.next();
 			System.out.println("create pdf: " + fullname);
 			saveaspdf(fullname);
-			ut.addSource(fullname + ".pdf");
+			try {
+				ut.addSource(fullname + ".pdf");
+				
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("out");
+			}
 		}
 		System.out.println("Merge pdf : "+tablename+"...");
 		merge(tablename);
+	}
+	
+	public void rcm() {
+		// TODO Auto-generated method stub
+		ut = new PDFMergerUtility();
+		String filepath="E:\\gitR\\document\\out\\";
+		File dir=new File(filepath);
+		ArrayList<String> namelist=new ArrayList<String>(40000);
+		Collections.addAll(namelist, dir.list());
+		Collections.sort(namelist);
+		String fullname="";
+		String townname="";
+		String filename="";
+		Iterator<String> itr = namelist.iterator();
+		while (itr.hasNext()){
+			filename=itr.next();
+			
+			fullname=filepath+filename;
+			saveaspdf(fullname);
+			
+			if(townname.isEmpty()||townname.equals(filename.substring(0, 9))){
+				
+				addsource(fullname);
+			}else{
+				merge(townname);
+				System.out.println(townname);
+				ut = new PDFMergerUtility();
+				addsource(fullname);
+			}
+			townname=filename.substring(0, 9);
+		}
+		merge(townname); 
+	}
+	
+	public void addsource(String fullname){
+		try {
+			ut.addSource(fullname + ".pdf");
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("out");
+		}
+	}
+	
+	public void testzip(){
+		
+	}
+
+	public String getDestinationDir() {
+		return destinationDir;
+	}
+
+	public void setDestinationDir(String destinationDir) {
+		this.destinationDir = destinationDir;
 	}
 
 }

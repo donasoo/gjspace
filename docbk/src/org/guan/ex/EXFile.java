@@ -3,17 +3,21 @@ package org.guan.ex;
 import java.io.*;
 import java.util.ArrayList;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.microsoft.schemas.office.visio.x2012.main.CellType;
+
 public class EXFile {
 	
-	private final String fixname="综合机关名称：";
+	private String fixname="单位 ：";
 	private StringBuffer unitName;
 	private String fileName="000";
 	private File template;
@@ -27,21 +31,44 @@ public class EXFile {
 	private XSSFRow row;
 	private XSSFCell	cell;
 	
-	private int colnum=3;
-	private int rownum=231;
-	private String firstcell="D9";
+	private ArrayList<TableHeadCell> thlist;
+	
+	private int firstData;
+	private int nTableHead;
+	private int colnum;
+	private int rownum;
+	private String firstcell;
 	private int firstrow;
 	private int firstcol;
-	private String tablename="M304";
+	private String tablename;
 	private boolean pdf=true;
+	private boolean first=false;
 	
 	private ArrayList<String> namelist;
 	private EXPdf expdf;
 	
 	public EXFile(){
 		init();
+		setup();
 		readData();
+	}
+	
+	private void setup(){
 		
+		thlist.add(new TableHeadCell("", 1, "A6", ""));
+		
+		tablename="M301-1";
+		firstData=2;
+		firstcell="C9";
+		colnum=6;
+		rownum=19;
+		nTableHead=1;
+		pdf=true;
+		first=true;
+		
+		firstcol=2;
+		firstrow=8;
+		System.out.println(firstcol+"  "+firstrow);
 	}
 	
 	private void init(){
@@ -49,10 +76,7 @@ public class EXFile {
 		unitName=new StringBuffer();
 		namelist=new ArrayList<String>();
 		expdf=new EXPdf();
-		
-		firstcol=firstcell.charAt(0)-'A';
-		firstrow=firstcell.charAt(1)-'1';
-		System.out.println(firstcol+"  "+firstrow);
+		thlist=new ArrayList<TableHeadCell>(5);
 	}
 	
 	private void readData() {
@@ -78,20 +102,23 @@ public class EXFile {
             if (reader != null) {
                 try {
                     reader.close();
-                    
                 } catch (IOException e1) {
                 }
             }
         }
     }
 	
-	
+	/**
+	 *  处理一行
+	 * @param tempString
+	 */
 	private void process(String tempString) {
-		// TODO Auto-generated method stub
-		data=tempString.split(",");
-		fileName=(data[0]+" "+data[1]).trim();
 		
-		unitName=new StringBuffer(fixname+data[1]);
+		//分解一行
+		data=tempString.split(",");
+		
+		//构建文件名
+		fileName=(data[0]+" "+data[1]).trim();
 		
 		System.out.println(unitName.toString());
 		if(data[0].substring(6, 8).endsWith("00")){
@@ -101,6 +128,21 @@ public class EXFile {
 	}
 
 
+	private void fitTableHead() {
+		// TODO Auto-generated method stu
+		for(int i=0; i<nTableHead; i++){
+			TableHeadCell thc =thlist.get(i);
+			thc.setContent(data[thc.getSerial()].trim());
+			row=ds.getRow(thc.getRow());
+			cell=row.getCell(thc.getCol());
+			if(cell == null){
+				cell=row.createCell(thc.getCol());
+			}
+			cell.setCellValue(thc.getFixcontent());
+		}
+		
+		
+	}
 	
 	private void excel(){
 		try {
@@ -109,33 +151,51 @@ public class EXFile {
 			ds=wb.getSheetAt(0); 
 			
 			//填写综合机关名称
-			row=ds.getRow(3);
-			cell=row.getCell(0);
-			if(cell == null){
-				cell=row.createCell(0);
-			}
-			cell.setCellValue(unitName.toString().trim());
+			fitTableHead();
+			
 			double realvalue=0.0;
 			long intvalue=0;
 			
 			for(int i=0; i<rownum; i++){
 				row=ds.getRow(i+firstrow);
+				if(row == null){
+					row=ds.createRow(i+firstrow);
+				}
 				
 				for(int j=0; j<colnum; j++){
-					if(data[2+i*colnum+j].contains(".")){
-						realvalue=Double.parseDouble(data[2+i*colnum+j]);
-						if(realvalue > 0.01){
-							row.getCell(j+firstcol).setCellValue(realvalue);
-						}
-						
+					
+					XSSFCell cell=row.getCell(j+firstcol);
+					if(cell == null){
+						cell=row.createCell(j+firstcol);
+					}
+					
+					if(i <  rownum-1){
+						cell.getCellStyle().setBorderBottom(HSSFCellStyle.BORDER_THIN);
 					}else{
-						intvalue=Long.parseLong(data[2+i*colnum+j]);
+						cell.getCellStyle().setBorderBottom(HSSFCellStyle.BORDER_MEDIUM);
+					}
+					cell.getCellStyle().setBorderLeft(HSSFCellStyle.BORDER_THIN);
+					
+					if(first && j==0){
+						cell.setCellValue(data[firstData+i*colnum+j]);
+						cell.getCellStyle().setBorderLeft(HSSFCellStyle.BORDER_NONE);
+						continue;
+					}
+					
+					if(data[firstData+i*colnum+j].isEmpty()){
+					}else if(data[firstData+i*colnum+j].contains(".")){
+						
+						realvalue=Double.parseDouble(data[firstData+i*colnum+j]);
+						if(realvalue > 0.01){
+							cell.setCellValue(realvalue);
+						}
+					}else{
+						intvalue=Long.parseLong(data[firstData+i*colnum+j]);
 						if(intvalue != 0){
-							row.getCell(j+firstcol).setCellValue(intvalue);
+							cell.setCellValue(intvalue);
 						}
 					}
 				}
-				
 			}
 			
 			
@@ -146,8 +206,6 @@ public class EXFile {
 			pkg.revert();
 			
 			namelist.add("E:\\GitJ\\docbk\\tempfiles\\"+fileName+".xlsx");
-			
-			
 		
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -160,6 +218,7 @@ public class EXFile {
 		}
 	    
 	}
+
 	
 	
 
