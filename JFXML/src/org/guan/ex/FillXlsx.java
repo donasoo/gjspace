@@ -51,6 +51,7 @@ public class FillXlsx {
     private String firstcell;
     private int firstrow;
     private int firstcol;
+    private int len;
 
     private String tablename;
     private boolean pdf = false;
@@ -76,9 +77,11 @@ public class FillXlsx {
         unitName = new StringBuffer();
         namelist = new ArrayList<String>();
         thlist = new ArrayList<TableHeadCell>(5);
+        
+        int[] rowcol=cell2int(taskconfig.startCell);
+        firstrow=rowcol[0];
+        firstcol=rowcol[1];
 
-        firstrow = taskconfig.startCell.charAt(1) - '1';
-        firstcol = taskconfig.startCell.charAt(0) - 'A';
     }
 
     private void readData() {
@@ -121,6 +124,7 @@ public class FillXlsx {
 
         //split to array
         data = rowString.split(",");
+        len=data.length;
 
         //get xlsx sheet file name
         buildFileName();
@@ -140,16 +144,27 @@ public class FillXlsx {
             workbook = new XSSFWorkbook(pkg);
             sheet = workbook.getSheetAt(0);
 
-            //脤卯脨麓脳脹潞脧禄煤鹿脴脙没鲁脝
+            //fill other cell
             if (taskconfig.nameNeed) {
-                fillName();
+                int[] rowcol=cell2int(taskconfig.nameCell);
+                cell = getCell(rowcol[0], rowcol[1]);
+                cell.setCellValue(taskconfig.namePrefix+":"+data[2]);
             }
             if (taskconfig.codeNeed) {
-                fillCode();
+            	int[] rowcol=cell2int(taskconfig.codeCell);
+                cell = getCell(rowcol[0], rowcol[1]);
+                cell.setCellValue(taskconfig.codePrefix+":"+data[1]);
             }
 
             if (taskconfig.tailNeed) {
-                fillTail();
+            	int[] rowcol=cell2int(taskconfig.tailCell);
+                cell = getCell(rowcol[0], rowcol[1]);
+                String str="单位负责人："+data[len-5]+
+                		"    填报人："+data[len-4]+
+                		"    报出日期："+data[len-3]+"年  "+
+                		data[len-2]+"月  "+
+                		data[len-1]+"日";
+                cell.setCellValue(str);
             }
 
             currRowNum = firstrow;
@@ -175,7 +190,7 @@ public class FillXlsx {
 
             }
 
-            fos = new FileOutputStream(fileName + ".xlsx");
+            fos = new FileOutputStream("out\\"+fileName + ".xlsx");
             workbook.write(fos);
             pkg.revert();
 
@@ -193,6 +208,7 @@ public class FillXlsx {
 
     private void buildFileName() {
         fileName = data[0];
+        System.out.println(fileName);
     }
 
     private void fillCode() {
@@ -215,20 +231,31 @@ public class FillXlsx {
             currColNum++;
         }
 
-        row = sheet.getRow(currRowNum);
+        cell = getCell(currRowNum, currColNum);
+            if (cell.getCellTypeEnum()==CellType.STRING && cell.getStringCellValue().contains("－")) {
+                getNextCell();
+                ;
+            }
+        
+
+        return cell;
+    }
+    
+    /*
+    find return next enable cell
+     */
+    private XSSFCell getCell(int rowindex, int colindex) {
+
+        row = sheet.getRow(rowindex);
 
         if (row == null) {
-            row = sheet.createRow(currRowNum);
+            row = sheet.createRow(rowindex);
         }
 
-        cell = row.getCell(currColNum);
-
+        cell = row.getCell(colindex);
+        
         if (cell == null) {
-            cell = row.createCell(currColNum);
-        } else {
-            if (cell.getStringCellValue().endsWith("-")) {
-                getNextCell();
-            }
+            cell = row.createCell(colindex);
         }
 
         return cell;
@@ -280,5 +307,17 @@ public class FillXlsx {
         return code;
 
         }
+    
+    private int[] cell2int(String cell) {
+    	int[] rowcol=new int[2];
+    	
+    	rowcol[0] = cell.charAt(1) - '1';
+        if(cell.length()>2) {
+        	rowcol[0]=(rowcol[0]+1)*10+(cell.charAt(2) - '1');
+        }
+        rowcol[1] = cell.charAt(0) - 'A';
+        
+        return rowcol;
+    }
 
     }

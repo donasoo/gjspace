@@ -5,6 +5,9 @@
  */
 package org.guan.ex;
 
+import java.io.File;
+import java.util.regex.Matcher;
+
 /**
  *
  * @author LGY
@@ -12,8 +15,14 @@ package org.guan.ex;
 public class Test {
     
     public static void main(String[] args) {
-        TaskConfig tf=new TaskConfig();
-        FillXlsx fx=new FillXlsx(tf);
+       
+    	String str="-гн";
+    	
+    	System.out.println(str.contains("-"));
+    	System.out.println(str.contains("гн"));
+    	System.out.println(str.contains("-|гн"));
+    	
+    	str.matches("");
     }
     
 }
